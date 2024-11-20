@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor.Experimental.GraphView;
+using UnityEditor.MPE;
 using UnityEngine;
 
 public class PlacementSystem : MonoBehaviour
@@ -9,93 +10,103 @@ public class PlacementSystem : MonoBehaviour
     [SerializeField]
     private InputManager inputManager;
     [SerializeField]
-    private GameObject mouseIndicator, cellindicator;
-    [SerializeField]
     private Grid grid;
+
     [SerializeField]
     private ObjectsDatabaseSO database;
-    private int selectedObjectIndex = - 1;
+
     [SerializeField]
     private GameObject gridVisualization;
+
+    [SerializeField]
+    private AudioClip correctPlacementClip, wrongPlacementClip;
     [SerializeField]
     private AudioSource source;
 
     private GridData floorData, furnitureData;
 
-    private Renderer previewRenderer;
+    [SerializeField]
+    private PreviewSystem preview;
 
-    private List<GameObject> placedGameObject = new();
+    private Vector3Int lastDetectedPosition = Vector3Int.zero;
+
+    [SerializeField]
+    private ObjectPlacer objectPlacer;
+
+    IBuildingState buildingState;
+
 
     private void Start()
     {
-        stopPlacement();
+        gridVisualization.SetActive(false);
         floorData = new();
         furnitureData = new();
-        previewRenderer = cellindicator.GetComponentInChildren<Renderer>();
     }
 
     public void StartPlacement(int ID)
     {
-        //so에서 해당 id를 가진 오브젝트 탐색 후 없으면 -1 리턴
-        selectedObjectIndex = database.objectsData.FindIndex(data => data.ID == ID);
-        if(selectedObjectIndex < 0)
-        {
-            Debug.LogError($"no id found{ID}");
-            return;
-        }
+        StopPlacement();
         gridVisualization.SetActive(true);
-        cellindicator.SetActive(true);
+        buildingState = new PlacementState(ID, grid, preview, database, floorData, furnitureData, objectPlacer);
         inputManager.OnClicked += PlaceStructure;
-        inputManager.OnExit += stopPlacement;
+        inputManager.OnExit += StopPlacement;
+    }
+
+    public void StartRemoving()
+    {
+        StopPlacement();
+        gridVisualization.SetActive(true);
+        buildingState = new RemovingState(grid, preview, floorData, furnitureData, objectPlacer);
+        inputManager.OnClicked += PlaceStructure;
+        inputManager.OnExit += StopPlacement;
     }
 
     private void PlaceStructure()
     {
-        if(inputManager.IsPointerOverUI())
+        //TODO : ui는 버튼으로 구현할건데 어떻게 될지 모름 ui 아래가 눌리면 필요할수도?
+        if (inputManager.IsPointerOverUI())
         {
             return;
         }
-        Vector3 mouseposition = inputManager.GetSelectedMapPosition();
-        Vector3Int gridPosition = grid.WorldToCell(mouseposition);
+        
+        Vector3 mousePosition = inputManager.GetSelectedMapPosition();// 마지막에 클릭한 placementLayermask 레이어 오브젝트 위치
+        Vector3Int gridPosition = grid.WorldToCell(mousePosition); //mouseposition에 해당하는 셀의 위치
 
-        bool placementValidity = CheckPlacementValidity(gridPosition, selectedObjectIndex);
-        if (placementValidity == false)
+        buildingState.OnAction(gridPosition);
+    }
+
+    //private bool CheckPlacementValidity(Vector3Int gridPosition, int selectedObjectIndex)
+    //{
+    //    GridData selectedData = database.objectsData[selectedObjectIndex].ID == 0 ? 
+    //        floorData : 
+    //        furnitureData;
+
+    //    return selectedData.CanPlaceObejctAt(gridPosition, database.objectsData[selectedObjectIndex].Size);
+    //}
+
+    private void StopPlacement()
+    {
+        if (buildingState == null)
             return;
-        //mouseIndicator.transform.position = mouseposition;
-        GameObject newObject = Instantiate(database.objectsData[selectedObjectIndex].Prefab); 
-        newObject.transform.position = grid.CellToWorld(gridPosition);
-
-        placedGameObject.Add(newObject);
-        GridData selectedData = database.objectsData[selectedObjectIndex].ID == 0 ? floorData : furnitureData;
-        selectedData.AddObjectAt(gridPosition, database.objectsData[selectedObjectIndex].Size, database.objectsData[selectedObjectIndex].ID, placedGameObject.Count - 1);
-    }
-
-    private bool CheckPlacementValidity(Vector3Int gridPosition, int selectedObjectIndex)
-    {
-        GridData selectedData = database.objectsData[selectedObjectIndex].ID == 0 ? floorData : furnitureData;
-        return selectedData.CanPlaceObjectAt(gridPosition, database.objectsData[selectedObjectIndex].Size);
-    }
-    private void stopPlacement()
-    {
-        selectedObjectIndex = -1;
         gridVisualization.SetActive(false);
-        cellindicator.SetActive(false);
+        buildingState.EndState();
         inputManager.OnClicked -= PlaceStructure;
-        inputManager.OnExit -= stopPlacement; 
+        inputManager.OnExit -= StopPlacement;
+        lastDetectedPosition = Vector3Int.zero;
+        buildingState = null;
     }
 
     private void Update()
     {
-        if (selectedObjectIndex < 0)
+        if (buildingState == null)
             return;
-        Vector3 mouseposition = inputManager.GetSelectedMapPosition();
-        Vector3Int gridPosition = grid.WorldToCell(mouseposition);
+        Vector3 mousePosition = inputManager.GetSelectedMapPosition();
+        Vector3Int gridPosition = grid.WorldToCell(mousePosition);
+        if (lastDetectedPosition != gridPosition)
+        {
+            buildingState.UpdateState(gridPosition);
+            lastDetectedPosition = gridPosition;
+        }
 
-        bool placementValidity = CheckPlacementValidity(gridPosition, selectedObjectIndex);
-        previewRenderer.material.color = placementValidity ? Color.white : Color.red;
-
-        mouseIndicator.transform.position = mouseposition;
-        cellindicator.transform.position = grid.CellToWorld(gridPosition);
     }
-
 }
