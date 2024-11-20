@@ -5,25 +5,23 @@ public class PreviewSystem : MonoBehaviour
 {
     [SerializeField]
     private float previewYOffset = 0.06f;
+    [SerializeField]
+    private float previewAlpha = 0.5f;  // 프리뷰의 투명도 설정
 
     [SerializeField]
     private GameObject cellIndicator;
     private GameObject previewObject;
 
-    [SerializeField]
-    private Material previewMaterialPrefab;
-    private Material previewMaterialInstance;
-
+    private List<Material> previewMaterialsCopy = new List<Material>();
+    private List<Material> originalMaterials = new List<Material>();
     private Renderer cellIndicatorRenderer;
 
     private GameObject cursorParent;
-
     private List<Vector2Int> currentOccupiedCells;
     private int currentRotation = 0;
 
     private void Start()
     {
-        previewMaterialInstance = new Material(previewMaterialPrefab);
         cellIndicator.SetActive(false);
         cellIndicatorRenderer = cellIndicator.GetComponentInChildren<Renderer>();
     }
@@ -72,12 +70,30 @@ public class PreviewSystem : MonoBehaviour
         Renderer[] renderers = previewObject.GetComponentsInChildren<Renderer>();
         foreach (Renderer renderer in renderers)
         {
-            Material[] materials = renderer.materials;
-            for (int i = 0; i < materials.Length; i++)
+            // 원본 머테리얼을 저장
+            originalMaterials.AddRange(renderer.materials);
+            
+            // 각 머테리얼의 복사본 생성
+            Material[] materialsCopy = new Material[renderer.materials.Length];
+            for(int i = 0; i < renderer.materials.Length; i++)
             {
-                materials[i] = previewMaterialInstance;
+                materialsCopy[i] = new Material(renderer.materials[i]);
+                materialsCopy[i].EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                materialsCopy[i].SetFloat("_Surface", 1);
+                materialsCopy[i].SetFloat("_Blend", 0);
+                materialsCopy[i].SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                materialsCopy[i].SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                materialsCopy[i].SetInt("_ZWrite", 0);
+                materialsCopy[i].renderQueue = 3000;
+                
+                // 초기 투명도 설정
+                Color color = materialsCopy[i].color;
+                color.a = previewAlpha;
+                materialsCopy[i].color = color;
+                
+                previewMaterialsCopy.Add(materialsCopy[i]);
             }
-            renderer.materials = materials;
+            renderer.materials = materialsCopy;
         }
     }
 
@@ -91,7 +107,17 @@ public class PreviewSystem : MonoBehaviour
             }
         }
         if (previewObject != null)
+        {
+            // 머테리얼 정리
+            foreach (var material in previewMaterialsCopy)
+            {
+                Destroy(material);
+            }
+            previewMaterialsCopy.Clear();
+            originalMaterials.Clear();
+            
             Destroy(previewObject);
+        }
     }
 
     public void UpdatePosition(Vector3 position, bool validity)
@@ -108,9 +134,13 @@ public class PreviewSystem : MonoBehaviour
 
     private void ApplyFeedbackToPreview(bool validity)
     {
-        Color c = validity ? Color.white : Color.red;
-        c.a = 0.5f;
-        previewMaterialInstance.color = c;
+        foreach (var material in previewMaterialsCopy)
+        {
+            // 원본 색상 유지하면서 알파값만 조정
+            Color color = validity ? originalMaterials[previewMaterialsCopy.IndexOf(material)].color : Color.red;
+            color.a = previewAlpha;
+            material.color = color;
+        }
     }
 
     private void ApplyFeedbackToCursor(bool validity)
