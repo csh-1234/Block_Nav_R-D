@@ -13,23 +13,48 @@ MonoBehaviour:
   m_Name: Database
   m_EditorClassIdentifier: 
   objectsData:
-  - <Name>k__BackingField: Floor
+  - <Name>k__BackingField: Block1
     <ID>k__BackingField: 0
-    <Size>k__BackingField: {x: 1, y: 1}
-    <Prefab>k__BackingField: {fileID: 175886647813805099, guid: 6bafb9556d35ba840bebea4eea7d34c2, type: 3}
-  - <Name>k__BackingField: Chair
-    <ID>k__BackingField: 1
-    <Size>k__BackingField: {x: 1, y: 1}
+    <OccupiedCells>k__BackingField:
+    - {x: 0, y: 0}
     <Prefab>k__BackingField: {fileID: 4428052050468720457, guid: e033e50487fb016449143cd70d837387, type: 3}
-  - <Name>k__BackingField: Big Bad
-    <ID>k__BackingField: 2
-    <Size>k__BackingField: {x: 2, y: 2}
+  - <Name>k__BackingField: Block2
+    <ID>k__BackingField: 1
+    <OccupiedCells>k__BackingField:
+    - {x: 0, y: 0}
+    - {x: 1, y: 0}
+    - {x: 0, y: 1}
+    - {x: 1, y: 1}
     <Prefab>k__BackingField: {fileID: 3487007735555770654, guid: 4721f1b576334dc46b3c72470bf613e3, type: 3}
-  - <Name>k__BackingField: Table
-    <ID>k__BackingField: 3
-    <Size>k__BackingField: {x: 2, y: 1}
-    <Prefab>k__BackingField: {fileID: 3493615974341626966, guid: c8183485a28237d4385a3c7ef8659faa, type: 3}
-  - <Name>k__BackingField: long
-    <ID>k__BackingField: 4
-    <Size>k__BackingField: {x: 1, y: 3}
+  - <Name>k__BackingField: Block3
+    <ID>k__BackingField: 2
+    <OccupiedCells>k__BackingField:
+    - {x: 0, y: 0}
+    - {x: -1, y: 0}
+    - {x: 1, y: 0}
+    - {x: 0, y: 1}
     <Prefab>k__BackingField: {fileID: 4168513232984766456, guid: 77006d6bf4e1783489c8a624f3e0a79b, type: 3}
+  - <Name>k__BackingField: Block4
+    <ID>k__BackingField: 3
+    <OccupiedCells>k__BackingField:
+    - {x: 0, y: 0}
+    - {x: 0, y: 1}
+    - {x: 1, y: 0}
+    - {x: 1, y: -1}
+    <Prefab>k__BackingField: {fileID: 4168513232984766456, guid: de8bd40b870da5b44afcad7a21cf3360, type: 3}
+  - <Name>k__BackingField: Block5
+    <ID>k__BackingField: 4
+    <OccupiedCells>k__BackingField:
+    - {x: 0, y: 0}
+    - {x: -1, y: 0}
+    - {x: 1, y: 0}
+    - {x: 2, y: 0}
+    <Prefab>k__BackingField: {fileID: 4168513232984766456, guid: 74e90bbbaf64b484e925d623f2bb80ff, type: 3}
+  - <Name>k__BackingField: Block6
+    <ID>k__BackingField: 5
+    <OccupiedCells>k__BackingField:
+    - {x: 0, y: 0}
+    - {x: -1, y: 0}
+    - {x: 1, y: 0}
+    - {x: 1, y: 1}
+    <Prefab>k__BackingField: {fileID: 4168513232984766456, guid: f67118f2575be9941b43e17b36bca586, type: 3}

@@ -6,82 +6,95 @@ using UnityEngine;
 public class PlacementState : IBuildingState
 {
     private int selectedObjectIndex = -1;
-    int ID;
+    private int currentRotation = 0;
     Grid grid;
-    PreviewSystem previewSystem;
+    PreviewSystem preview;
     ObjectsDatabaseSO database;
     GridData floorData;
     GridData furnitureData;
     ObjectPlacer objectPlacer;
+    InputManager inputManager;
 
-    public PlacementState(int iD,
-                          Grid grid,
-                          PreviewSystem previewSystem,
-                          ObjectsDatabaseSO database,
-                          GridData floorData,
-                          GridData furnitureData,
-                          ObjectPlacer objectPlacer)
+    public PlacementState(int ID,
+                         Grid grid,
+                         PreviewSystem preview,
+                         ObjectsDatabaseSO database,
+                         GridData floorData,
+                         GridData furnitureData,
+                         ObjectPlacer objectPlacer,
+                         InputManager inputManager)
     {
-        ID = iD;
         this.grid = grid;
-        this.previewSystem = previewSystem;
+        this.preview = preview;
         this.database = database;
         this.floorData = floorData;
         this.furnitureData = furnitureData;
         this.objectPlacer = objectPlacer;
+        this.inputManager = inputManager;
 
         selectedObjectIndex = database.objectsData.FindIndex(data => data.ID == ID);
         if (selectedObjectIndex > -1)
         {
-            previewSystem.StartShowingPlacementPreview(
+            preview.StartShowingPlacementPreview(
                 database.objectsData[selectedObjectIndex].Prefab,
-                database.objectsData[selectedObjectIndex].Size);
+                database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation),
+                currentRotation);
         }
-        else
-            throw new System.Exception($"No object with ID {iD}");
 
+        inputManager.OnRotate += RotateStructure;
+    }
+
+    private void RotateStructure()
+    {
+        if (!inputManager.IsPointerOverUI())
+        {
+            currentRotation = (currentRotation + 1) % 4;
+            preview.UpdateRotation(currentRotation);
+        }
     }
 
     public void EndState()
     {
-        previewSystem.StopShowingPreview();
+        preview.StopShowingPreview();
+        inputManager.OnRotate -= RotateStructure;
     }
 
     public void OnAction(Vector3Int gridPosition)
     {
-        bool placementValidity = CheckPlacementValidity(gridPosition, selectedObjectIndex);
-        if (placementValidity == false)
+        bool canPlace = floorData.CanPlaceObjectAt(gridPosition, 
+            database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation)) &&
+            furnitureData.CanPlaceObjectAt(gridPosition, 
+            database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation));
+
+        if (canPlace)
         {
-            return;
+            GridData selectedData = database.objectsData[selectedObjectIndex].ID == 0 ?
+                floorData :
+                furnitureData;
+
+            Vector3 position = grid.CellToWorld(gridPosition);
+            position += new Vector3(0.5f, 0, 0.5f);
+
+            int index = objectPlacer.PlaceObject(
+                database.objectsData[selectedObjectIndex].Prefab,
+                position,
+                Quaternion.Euler(0, 90 * currentRotation, 0));
+
+            selectedData.AddObjectAt(
+                gridPosition,
+                database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation),
+                database.objectsData[selectedObjectIndex].ID,
+                index);
         }
-        int index = objectPlacer.PlaceObject(database.objectsData[selectedObjectIndex].Prefab,
-            grid.CellToWorld(gridPosition));
-
-        GridData selectedData = database.objectsData[selectedObjectIndex].ID == 0 ?
-            floorData :
-            furnitureData;
-        selectedData.AddObjectAt(gridPosition,
-            database.objectsData[selectedObjectIndex].Size,
-            database.objectsData[selectedObjectIndex].ID,
-            index);
-
-        previewSystem.UpdatePosition(grid.CellToWorld(gridPosition), false);
-    }
-
-    private bool CheckPlacementValidity(Vector3Int gridPosition, int selectedObjectIndex)
-    {
-        GridData selectedData = database.objectsData[selectedObjectIndex].ID == 0 ?
-            floorData :
-            furnitureData;
-
-        return selectedData.CanPlaceObejctAt(gridPosition, database.objectsData[selectedObjectIndex].Size);
     }
 
     public void UpdateState(Vector3Int gridPosition)
     {
-        bool placementValidity = CheckPlacementValidity(gridPosition, selectedObjectIndex);
+        bool validity = floorData.CanPlaceObjectAt(gridPosition, 
+            database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation)) &&
+            furnitureData.CanPlaceObjectAt(gridPosition, 
+            database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation));
 
-        previewSystem.UpdatePosition(grid.CellToWorld(gridPosition), placementValidity);
+        preview.UpdatePosition(grid.CellToWorld(gridPosition), validity);
     }
-
 }

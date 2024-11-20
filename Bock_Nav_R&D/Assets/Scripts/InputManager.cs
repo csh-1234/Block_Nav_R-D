@@ -14,7 +14,7 @@ public class InputManager : MonoBehaviour
     [SerializeField]
     private LayerMask placementLayermask;
 
-    public event Action OnClicked, OnExit;
+    public event Action OnClicked, OnExit, OnRotate;
 
     private void Update()
     {
@@ -22,10 +22,12 @@ public class InputManager : MonoBehaviour
             OnClicked?.Invoke();
         if (Input.GetKeyDown(KeyCode.Escape))
             OnExit?.Invoke();
+        if (Input.GetMouseButtonDown(1))
+            OnRotate?.Invoke();
     }
 
     public bool IsPointerOverUI()
-        => EventSystem.current.IsPointerOverGameObject(); //마우스가  ui 요소 위에 있는지 체크
+        => EventSystem.current.IsPointerOverGameObject();
 
     public Vector3 GetSelectedMapPosition()
     {

@@ -47,7 +47,15 @@ public class PlacementSystem : MonoBehaviour
     {
         StopPlacement();
         gridVisualization.SetActive(true);
-        buildingState = new PlacementState(ID, grid, preview, database, floorData, furnitureData, objectPlacer);
+        buildingState = new PlacementState(
+            ID, 
+            grid, 
+            preview, 
+            database, 
+            floorData, 
+            furnitureData, 
+            objectPlacer,
+            inputManager);
         inputManager.OnClicked += PlaceStructure;
         inputManager.OnExit += StopPlacement;
     }
@@ -63,14 +71,14 @@ public class PlacementSystem : MonoBehaviour
 
     private void PlaceStructure()
     {
-        //TODO : ui는 버튼으로 구현할건데 어떻게 될지 모름 ui 아래가 눌리면 필요할수도?
+        //TODO : ui 튼柰풩錚�  ui 틔却寗?
         if (inputManager.IsPointerOverUI())
         {
             return;
         }
         
-        Vector3 mousePosition = inputManager.GetSelectedMapPosition();// 마지막에 클릭한 placementLayermask 레이어 오브젝트 위치
-        Vector3Int gridPosition = grid.WorldToCell(mousePosition); //mouseposition에 해당하는 셀의 위치
+        Vector3 mousePosition = inputManager.GetSelectedMapPosition();// 클 placementLayermask 潔트 치
+        Vector3Int gridPosition = grid.WorldToCell(mousePosition); //mouseposition娩求 치
 
         buildingState.OnAction(gridPosition);
     }
