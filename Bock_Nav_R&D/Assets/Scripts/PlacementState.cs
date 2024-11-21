@@ -10,25 +10,19 @@ public class PlacementState : IBuildingState
     Grid grid;
     PreviewSystem preview;
     ObjectsDatabaseSO database;
-    GridData floorData;
-    GridData furnitureData;
+    GridData BlockData;
+    GridData TowerData;
     ObjectPlacer objectPlacer;
     InputManager inputManager;
 
-    public PlacementState(int ID,
-                         Grid grid,
-                         PreviewSystem preview,
-                         ObjectsDatabaseSO database,
-                         GridData floorData,
-                         GridData furnitureData,
-                         ObjectPlacer objectPlacer,
-                         InputManager inputManager)
+    public PlacementState(int ID, Grid grid, PreviewSystem preview, ObjectsDatabaseSO database, GridData blockData,
+            GridData towerData, ObjectPlacer objectPlacer, InputManager inputManager)
     {
         this.grid = grid;
         this.preview = preview;
         this.database = database;
-        this.floorData = floorData;
-        this.furnitureData = furnitureData;
+        this.BlockData = blockData;
+        this.TowerData = towerData;
         this.objectPlacer = objectPlacer;
         this.inputManager = inputManager;
 
@@ -61,19 +55,34 @@ public class PlacementState : IBuildingState
 
     public void OnAction(Vector3Int gridPosition)
     {
-        bool canPlace = floorData.CanPlaceObjectAt(gridPosition, 
-            database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation)) &&
-            furnitureData.CanPlaceObjectAt(gridPosition, 
-            database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation));
+        int floor = 0;
+        bool canPlace = false;
+
+        if (database.IsTower(database.objectsData[selectedObjectIndex].ID))
+        {
+            Vector3Int positionBelow = new Vector3Int(gridPosition.x, 0, gridPosition.z);
+            
+            if (BlockData.GetRepresentationIndex(positionBelow) != -1)
+            {
+                floor = 1;
+                canPlace = TowerData.CanPlaceObjectAt(gridPosition, 
+                    database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation), floor);
+            }
+        }
+        else
+        {
+            canPlace = BlockData.CanPlaceObjectAt(gridPosition, 
+                database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation), floor) &&
+                TowerData.CanPlaceObjectAt(gridPosition, 
+                database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation), floor);
+        }
 
         if (canPlace)
         {
-            GridData selectedData = database.objectsData[selectedObjectIndex].ID == 0 ?
-                floorData :
-                furnitureData;
-
+            GridData selectedData = database.IsBlock(database.objectsData[selectedObjectIndex].ID) ? BlockData : TowerData;
+             
             Vector3 position = grid.CellToWorld(gridPosition);
-            position += new Vector3(0.5f, 0, 0.5f);
+            position += new Vector3(0.5f, floor, 0.5f);
 
             int index = objectPlacer.PlaceObject(
                 database.objectsData[selectedObjectIndex].Prefab,
@@ -84,17 +93,34 @@ public class PlacementState : IBuildingState
                 gridPosition,
                 database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation),
                 database.objectsData[selectedObjectIndex].ID,
-                index);
+                index,
+                floor);
         }
     }
 
     public void UpdateState(Vector3Int gridPosition)
     {
-        bool validity = floorData.CanPlaceObjectAt(gridPosition, 
-            database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation)) &&
-            furnitureData.CanPlaceObjectAt(gridPosition, 
-            database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation));
+        int floor = 0;
+        bool validity = false;
+        
+        if (database.IsTower(database.objectsData[selectedObjectIndex].ID))
+        {
+            Vector3Int positionBelow = new Vector3Int(gridPosition.x, 0, gridPosition.z);
+            if (BlockData.GetRepresentationIndex(positionBelow) != -1)
+            {
+                floor = 1;
+                validity = TowerData.CanPlaceObjectAt(gridPosition, 
+                    database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation), floor);
+            }
+        }
+        else
+        {
+            validity = BlockData.CanPlaceObjectAt(gridPosition, 
+                database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation), floor) &&
+                TowerData.CanPlaceObjectAt(gridPosition, 
+                database.objectsData[selectedObjectIndex].GetRotatedCells(currentRotation), floor);
+        }
 
-        preview.UpdatePosition(grid.CellToWorld(gridPosition), validity);
+        preview.UpdatePosition(grid.CellToWorld(gridPosition), validity, floor);
     }
 }

@@ -23,7 +23,7 @@ public class PlacementSystem : MonoBehaviour
     [SerializeField]
     private AudioSource source;
 
-    private GridData floorData, furnitureData;
+    private GridData BlockData, TowerData;
 
     [SerializeField]
     private PreviewSystem preview;
@@ -39,23 +39,15 @@ public class PlacementSystem : MonoBehaviour
     private void Start()
     {
         gridVisualization.SetActive(false);
-        floorData = new();
-        furnitureData = new();
+        BlockData = new();
+        TowerData = new();
     }
 
     public void StartPlacement(int ID)
     {
         StopPlacement();
         gridVisualization.SetActive(true);
-        buildingState = new PlacementState(
-            ID, 
-            grid, 
-            preview, 
-            database, 
-            floorData, 
-            furnitureData, 
-            objectPlacer,
-            inputManager);
+        buildingState = new PlacementState(ID, grid, preview, database, BlockData, TowerData, objectPlacer, inputManager);
         inputManager.OnClicked += PlaceStructure;
         inputManager.OnExit += StopPlacement;
     }
@@ -64,21 +56,20 @@ public class PlacementSystem : MonoBehaviour
     {
         StopPlacement();
         gridVisualization.SetActive(true);
-        buildingState = new RemovingState(grid, preview, floorData, furnitureData, objectPlacer);
+        buildingState = new RemovingState(grid, preview, BlockData, TowerData, objectPlacer);
         inputManager.OnClicked += PlaceStructure;
         inputManager.OnExit += StopPlacement;
     }
 
     private void PlaceStructure()
     {
-        //TODO : ui ưҰǵ  ui ƷʿҼ?
         if (inputManager.IsPointerOverUI())
         {
             return;
         }
         
-        Vector3 mousePosition = inputManager.GetSelectedMapPosition();// Ŭ placementLayermask ̾Ʈ ġ
-        Vector3Int gridPosition = grid.WorldToCell(mousePosition); //mousepositionشϴ ġ
+        Vector3 mousePosition = inputManager.GetSelectedMapPosition();
+        Vector3Int gridPosition = grid.WorldToCell(mousePosition); 
 
         buildingState.OnAction(gridPosition);
     }

@@ -6,7 +6,7 @@ public class PreviewSystem : MonoBehaviour
     [SerializeField]
     private float previewYOffset = 0.06f;
     [SerializeField]
-    private float previewAlpha = 0.5f;  // 프리뷰의 투명도 설정
+    private float previewAlpha = 0.5f;  //  
 
     [SerializeField]
     private GameObject cellIndicator;
@@ -42,25 +42,22 @@ public class PreviewSystem : MonoBehaviour
         if (occupiedCells.Count == 0)
             return;
 
-        // 부모 오브젝트 생성 (기존 cellIndicator는 이 아래로 들어갈 것임)
         if (cursorParent == null)
         {
             cursorParent = new GameObject("Cursor Parent");
             cursorParent.transform.SetParent(transform);
         }
 
-        // 기존 커서 자식들 제거
         foreach (Transform child in cursorParent.transform)
         {
             Destroy(child.gameObject);
         }
 
-        // 각 점유 셀마다 인디케이터 생성
         foreach (var cell in occupiedCells)
         {
             GameObject newCell = Instantiate(cellIndicator, cursorParent.transform);
             newCell.transform.localPosition = new Vector3(cell.x, 0, cell.y);
-            newCell.transform.localScale = Vector3.one; // 각 셀은 1x1 크기
+            newCell.transform.localScale = Vector3.one; //  1x1 ũ
             newCell.SetActive(true);
         }
     }
@@ -70,12 +67,10 @@ public class PreviewSystem : MonoBehaviour
         Renderer[] renderers = previewObject.GetComponentsInChildren<Renderer>();
         foreach (Renderer renderer in renderers)
         {
-            // 원본 머테리얼을 저장
             originalMaterials.AddRange(renderer.materials);
-            
-            // 각 머테리얼의 복사본 생성
+
             Material[] materialsCopy = new Material[renderer.materials.Length];
-            for(int i = 0; i < renderer.materials.Length; i++)
+            for (int i = 0; i < renderer.materials.Length; i++)
             {
                 materialsCopy[i] = new Material(renderer.materials[i]);
                 materialsCopy[i].EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
@@ -85,12 +80,12 @@ public class PreviewSystem : MonoBehaviour
                 materialsCopy[i].SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                 materialsCopy[i].SetInt("_ZWrite", 0);
                 materialsCopy[i].renderQueue = 3000;
-                
-                // 초기 투명도 설정
+
+                // ʱ 
                 Color color = materialsCopy[i].color;
                 color.a = previewAlpha;
                 materialsCopy[i].color = color;
-                
+
                 previewMaterialsCopy.Add(materialsCopy[i]);
             }
             renderer.materials = materialsCopy;
@@ -108,27 +103,27 @@ public class PreviewSystem : MonoBehaviour
         }
         if (previewObject != null)
         {
-            // 머테리얼 정리
+            // ׸
             foreach (var material in previewMaterialsCopy)
             {
                 Destroy(material);
             }
             previewMaterialsCopy.Clear();
             originalMaterials.Clear();
-            
+
             Destroy(previewObject);
         }
     }
 
-    public void UpdatePosition(Vector3 position, bool validity)
+    public void UpdatePosition(Vector3 position, bool validity, int floor = 0)
     {
         if (previewObject != null)
         {
-            MovePreview(position);
+            MovePreview(position, floor);
             ApplyFeedbackToPreview(validity);
         }
 
-        MoveCursor(position);
+        MoveCursor(position, floor);
         ApplyFeedbackToCursor(validity);
     }
 
@@ -136,7 +131,6 @@ public class PreviewSystem : MonoBehaviour
     {
         foreach (var material in previewMaterialsCopy)
         {
-            // 원본 색상 유지하면서 알파값만 조정
             Color color = validity ? originalMaterials[previewMaterialsCopy.IndexOf(material)].color : Color.red;
             color.a = previewAlpha;
             material.color = color;
@@ -150,17 +144,19 @@ public class PreviewSystem : MonoBehaviour
         cellIndicatorRenderer.material.color = c;
     }
 
-    private void MoveCursor(Vector3 position)
+    private void MoveCursor(Vector3 position, int floor)
     {
         if (cursorParent != null)
-            cursorParent.transform.position = position;
+        {
+            cursorParent.transform.position = new Vector3( position.x, position.y + floor,position.z);
+        }
     }
 
-    private void MovePreview(Vector3 position)
+    private void MovePreview(Vector3 position, int floor)
     {
         previewObject.transform.position = new Vector3(
             position.x + 0.5f,
-            position.y + previewYOffset,
+            position.y + previewYOffset + floor,
             position.z + 0.5f);
     }
 
@@ -176,7 +172,7 @@ public class PreviewSystem : MonoBehaviour
         if (currentOccupiedCells == null)
             return new List<Vector2Int>() { Vector2Int.zero };
 
-        // 현재 회전을 적용한 셀 반환
+        //  ȸ  ȯ
         List<Vector2Int> rotatedCells = new List<Vector2Int>();
         foreach (var cell in currentOccupiedCells)
         {
@@ -198,7 +194,6 @@ public class PreviewSystem : MonoBehaviour
             previewObject.transform.rotation = Quaternion.Euler(0, 90 * currentRotation, 0);
         }
 
-        // 회전된 셀 위치 계산
         List<Vector2Int> rotatedCells = new List<Vector2Int>();
         foreach (var cell in currentOccupiedCells)
         {
@@ -210,14 +205,13 @@ public class PreviewSystem : MonoBehaviour
             rotatedCells.Add(rotated);
         }
 
-        // 커서 업데이트
         if (cursorParent != null)
         {
             foreach (Transform child in cursorParent.transform)
             {
                 Destroy(child.gameObject);
             }
-            
+
             var currentPosition = cursorParent.transform.position;
             PrepareCursor(rotatedCells);
             cursorParent.transform.position = currentPosition;

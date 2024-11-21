@@ -58,3 +58,8 @@ MonoBehaviour:
     - {x: 1, y: 0}
     - {x: 1, y: 1}
     <Prefab>k__BackingField: {fileID: 4168513232984766456, guid: f67118f2575be9941b43e17b36bca586, type: 3}
+  - <Name>k__BackingField: Tower1
+    <ID>k__BackingField: 6
+    <OccupiedCells>k__BackingField:
+    - {x: 0, y: 0}
+    <Prefab>k__BackingField: {fileID: 4428052050468720457, guid: 69d8bc84721ee9d41b12a43d6d25beb6, type: 3}

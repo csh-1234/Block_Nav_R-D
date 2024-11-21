@@ -9,20 +9,16 @@ public class RemovingState : IBuildingState
     private int gameObjectIndex = -1;
     Grid grid;
     PreviewSystem previewSystem;
-    GridData floorData;
-    GridData furnitureData;
+    GridData BlockData;
+    GridData TowerData;
     ObjectPlacer objectPlacer;
 
-    public RemovingState(Grid grid,
-                         PreviewSystem previewSystem,
-                         GridData floorData,
-                         GridData furnitureData,
-                         ObjectPlacer objectPlacer)
+    public RemovingState(Grid grid, PreviewSystem previewSystem, GridData blockData, GridData towerData, ObjectPlacer objectPlacer)
     {
         this.grid = grid;
         this.previewSystem = previewSystem;
-        this.floorData = floorData;
-        this.furnitureData = furnitureData;
+        this.BlockData = blockData;
+        this.TowerData = towerData;
         this.objectPlacer = objectPlacer;
         previewSystem.StartShowingRemovePreview();
     }
@@ -35,13 +31,13 @@ public class RemovingState : IBuildingState
     public void OnAction(Vector3Int gridPosition)
     {
         GridData selectedData = null;
-        if (furnitureData.GetRepresentationIndex(gridPosition) != -1)
+        if (TowerData.GetRepresentationIndex(gridPosition) != -1)
         {
-            selectedData = furnitureData;
+            selectedData = TowerData;
         }
-        else if (floorData.GetRepresentationIndex(gridPosition) != -1)
+        else if (BlockData.GetRepresentationIndex(gridPosition) != -1)
         {
-            selectedData = floorData;
+            selectedData = BlockData;
         }
 
         if (selectedData == null)
@@ -56,14 +52,14 @@ public class RemovingState : IBuildingState
             selectedData.RemoveObjectAt(gridPosition);
             objectPlacer.RemoveObjectAt(gameObjectIndex);
         }
+
         Vector3 cellPosition = grid.CellToWorld(gridPosition);
         previewSystem.UpdatePosition(cellPosition, CheckIfSelectionIsValid(gridPosition));
     }
 
     private bool CheckIfSelectionIsValid(Vector3Int gridPosition)
     {
-        return furnitureData.GetRepresentationIndex(gridPosition) != -1 || 
-               floorData.GetRepresentationIndex(gridPosition) != -1;
+        return TowerData.GetRepresentationIndex(gridPosition) != -1 ||  BlockData.GetRepresentationIndex(gridPosition) != -1;
     }
 
     public void UpdateState(Vector3Int gridPosition)
