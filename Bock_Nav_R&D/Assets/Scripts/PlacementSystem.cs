@@ -11,6 +11,8 @@ public class PlacementSystem : MonoBehaviour
     private InputManager inputManager;
     [SerializeField]
     private Grid grid;
+    [SerializeField]
+    private AGrid aGrid;
 
     [SerializeField]
     private ObjectsDatabaseSO database;
@@ -47,7 +49,7 @@ public class PlacementSystem : MonoBehaviour
     {
         StopPlacement();
         gridVisualization.SetActive(true);
-        buildingState = new PlacementState(ID, grid, preview, database, BlockData, TowerData, objectPlacer, inputManager);
+        buildingState = new PlacementState(ID, grid, preview, database, BlockData, TowerData, objectPlacer, inputManager, aGrid);
         inputManager.OnClicked += PlaceStructure;
         inputManager.OnExit += StopPlacement;
     }

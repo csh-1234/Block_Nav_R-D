@@ -14,9 +14,10 @@ public class PlacementState : IBuildingState
     GridData TowerData;
     ObjectPlacer objectPlacer;
     InputManager inputManager;
+    AGrid aGrid;
 
     public PlacementState(int ID, Grid grid, PreviewSystem preview, ObjectsDatabaseSO database, GridData blockData,
-            GridData towerData, ObjectPlacer objectPlacer, InputManager inputManager)
+            GridData towerData, ObjectPlacer objectPlacer, InputManager inputManager, AGrid aGrid)
     {
         this.grid = grid;
         this.preview = preview;
@@ -25,6 +26,7 @@ public class PlacementState : IBuildingState
         this.TowerData = towerData;
         this.objectPlacer = objectPlacer;
         this.inputManager = inputManager;
+        this.aGrid = aGrid;
 
         selectedObjectIndex = database.objectsData.FindIndex(data => data.ID == ID);
         if (selectedObjectIndex > -1)
@@ -95,6 +97,16 @@ public class PlacementState : IBuildingState
                 database.objectsData[selectedObjectIndex].ID,
                 index,
                 floor);
+
+            if (database.IsBlock(database.objectsData[selectedObjectIndex].ID))
+            {
+                aGrid.UpdateGrid();
+            }
+        }
+
+        if (PathManager.Instance != null && PathManager.Instance.HasBothPoints())
+        {
+            PathManager.Instance.UpdatePath();
         }
     }
 

@@ -32,16 +32,23 @@ public class AGrid : MonoBehaviour
         }
     }
 
+    public void UpdateGrid()
+    {
+        CreateGrid();
+    }
+
     void CreateGrid()
     {
         grid = new ANode[gridSizeX, gridSizeY];
         Vector3 worldBottomLeft = transform.position - Vector3.right * gridWorldSize.x / 2 - Vector3.forward * gridWorldSize.y / 2;
+        worldBottomLeft.y = transform.position.y;
 
         for (int x = 0; x < gridSizeX; x++)
         {
             for (int y = 0; y < gridSizeY; y++)
             {
                 Vector3 worldPoint = worldBottomLeft + Vector3.right * (x * ANodeDiameter + ANodeRadius) + Vector3.forward * (y * ANodeDiameter + ANodeRadius);
+                worldPoint.y = transform.position.y;
                 bool walkable = !(Physics.CheckSphere(worldPoint, ANodeRadius, unwalkableMask));
                 grid[x, y] = new ANode(walkable, worldPoint, x, y);
             }

@@ -5,12 +5,29 @@ using UnityEngine;
 public class Unit : MonoBehaviour
 {
     public Transform target;
-    float speed = 5;
-    Vector3[] path;
-    int targetIndex;
+    private Vector3[] path;
+    private LineRenderer lineRenderer;
 
-    void Start()
+    void Awake()
     {
+        lineRenderer = gameObject.AddComponent<LineRenderer>();
+        lineRenderer.startWidth = 0.15f;
+        lineRenderer.endWidth = 0.15f;
+        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        lineRenderer.startColor = Color.black;
+        lineRenderer.endColor = Color.black;
+    }
+
+    public void SetTarget(Transform newTarget)
+    {
+        target = newTarget;
+        if (target != null)
+            UpdatePath();
+    }
+
+    public void UpdatePath()
+    {
+        if (target == null) return;
         PathRequestManager.RequestPath(transform.position, target.position, OnPathFound);
     }
 
@@ -19,51 +36,42 @@ public class Unit : MonoBehaviour
         if (pathSuccessful)
         {
             path = newPath;
-            targetIndex = 0;
-            StopCoroutine("FollowPath");
-            StartCoroutine("FollowPath");
+            if (PathManager.Instance != null)
+            {
+                PathManager.Instance.OnPathCalculated(newPath, true);
+            }
+            DrawPath();
+        }
+        else
+        {
+            path = null;
+            if (PathManager.Instance != null)
+            {
+                PathManager.Instance.OnPathCalculated(null, false);
+            }
+            lineRenderer.positionCount = 0;
         }
     }
 
-    IEnumerator FollowPath()
+    void DrawPath()
     {
-        Vector3 currentWaypoint = path[0];
-        while (true)
+        if (path == null || path.Length == 0) return;
+
+        Vector3[] points = new Vector3[path.Length + 2];
+        points[0] = transform.position;
+        for (int i = 0; i < path.Length; i++)
         {
-            if (transform.position == currentWaypoint)
-            {
-                targetIndex++;
-                if (targetIndex >= path.Length)
-                {
-                    yield break;
-                }
-                currentWaypoint = path[targetIndex];
-            }
-
-            transform.position = Vector3.MoveTowards(transform.position, currentWaypoint, speed * Time.deltaTime);
-            yield return null;
-
+            points[i + 1] = path[i];
         }
-    }
+        points[points.Length - 1] = target.position;
 
-    public void OnDrawGizmos()
-    {
-        if (path != null)
+        float pathHeight = transform.position.y;
+        for (int i = 0; i < points.Length; i++)
         {
-            for (int i = targetIndex; i < path.Length; i++)
-            {
-                Gizmos.color = Color.black;
-                Gizmos.DrawCube(path[i], Vector3.one);
-
-                if (i == targetIndex)
-                {
-                    Gizmos.DrawLine(transform.position, path[i]);
-                }
-                else
-                {
-                    Gizmos.DrawLine(path[i - 1], path[i]);
-                }
-            }
+            points[i].y = pathHeight;
         }
+
+        lineRenderer.positionCount = points.Length;
+        lineRenderer.SetPositions(points);
     }
 }
