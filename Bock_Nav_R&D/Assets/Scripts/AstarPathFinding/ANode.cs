@@ -15,12 +15,15 @@ public class ANode :IHeapItem<ANode>
     public ANode parent;
     int heapIndex;
 
+    public float directionPreference;
+
     public ANode(bool _walkable, Vector3 _worldPos, int _gridX, int _gridY)
     {
         walkable = _walkable;
         worldPosition = _worldPos;
         gridX = _gridX;
         gridY = _gridY;
+        directionPreference = 0;
     }
 
     public int fCost
@@ -43,12 +46,31 @@ public class ANode :IHeapItem<ANode>
         }
     }
 
+    public void CalculateDirectionPreference(Vector3 targetPosition)
+    {
+        Vector3 directionToTarget = (targetPosition - worldPosition).normalized;
+        
+        if (parent != null)
+        {
+            Vector3 currentDirection = (worldPosition - parent.worldPosition).normalized;
+            directionPreference = Vector3.Dot(currentDirection, directionToTarget);
+        }
+        else
+        {
+            directionPreference = 1;
+        }
+    }
+
     public int CompareTo(ANode nodeToCompare)
     {
         int compare = fCost.CompareTo(nodeToCompare.fCost);
         if (compare == 0)
         {
-            compare = hCost.CompareTo(nodeToCompare.hCost);
+            compare = directionPreference.CompareTo(nodeToCompare.directionPreference);
+            if (compare == 0)
+            {
+                compare = hCost.CompareTo(nodeToCompare.hCost);
+            }
         }
         return -compare;
     }

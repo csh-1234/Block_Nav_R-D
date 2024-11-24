@@ -23,7 +23,7 @@ public class GridData
 
         foreach (var vec in placedObjects.Keys)
         {
-            Debug.Log($" : {vec.x},{vec.y},{vec.z}");
+            //Debug.Log($" : {vec.x},{vec.y},{vec.z}");
         }
     }
 
@@ -79,6 +79,13 @@ public class GridData
         {
             placedObjects.Remove(pos);
         }
+    }
+
+    public PlacementData GetPlacementData(Vector3Int gridPosition)
+    {
+        if (placedObjects.ContainsKey(gridPosition))
+            return placedObjects[gridPosition];
+        return null;
     }
 }
 

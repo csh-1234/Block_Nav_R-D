@@ -30,43 +30,60 @@ public class PathFinding : MonoBehaviour
         Vector3[] waypoints = new Vector3[0];
         bool pathSuccess = false;
 
-        ANode startANode = grid.ANodeFromWorldPoint(startPos);
-        ANode targetANode = grid.ANodeFromWorldPoint(targetPos);
+        ANode startNode = grid.ANodeFromWorldPoint(startPos);
+        ANode targetNode = grid.ANodeFromWorldPoint(targetPos);
 
 
-        if (startANode.walkable && targetANode.walkable)
+        if (startNode.walkable && targetNode.walkable)
         {
             Heap<ANode> openSet = new Heap<ANode>(grid.MaxSize);
             HashSet<ANode> closedSet = new HashSet<ANode>();
-            openSet.Add(startANode);
+            openSet.Add(startNode);
 
             while (openSet.Count > 0)
             {
-                ANode currentANode = openSet.RemoveFirst();
-                closedSet.Add(currentANode);
+                ANode currentNode = openSet.RemoveFirst();
+                closedSet.Add(currentNode);
 
-                if (currentANode == targetANode)
+                if (currentNode == targetNode)
                 {
                     pathSuccess = true;
                     break;
                 }
 
-                foreach (ANode neighbour in grid.GetNeighbours(currentANode))
+                foreach (ANode neighbour in grid.GetNeighbours(currentNode))
                 {
                     if (!neighbour.walkable || closedSet.Contains(neighbour))
                     {
                         continue;
                     }
 
-                    int newMovementCostToNeighbour = currentANode.gCost + GetDistance(currentANode, neighbour);
+                    bool pathBlocked = false;
+                    Vector3 directionToNeighbour = neighbour.worldPosition - currentNode.worldPosition;
+                    if (Physics.Raycast(currentNode.worldPosition, directionToNeighbour.normalized, 
+                        directionToNeighbour.magnitude, grid.unwalkableMask))
+                    {
+                        pathBlocked = true;
+                    }
+
+                    if (pathBlocked)
+                    {
+                        continue;
+                    }
+
+                    int newMovementCostToNeighbour = currentNode.gCost + GetDistance(currentNode, neighbour);
                     if (newMovementCostToNeighbour < neighbour.gCost || !openSet.Contains(neighbour))
                     {
                         neighbour.gCost = newMovementCostToNeighbour;
-                        neighbour.hCost = GetDistance(neighbour, targetANode);
-                        neighbour.parent = currentANode;
+                        neighbour.hCost = GetDistance(neighbour, targetNode);
+                        neighbour.parent = currentNode;
+                        
+                        neighbour.CalculateDirectionPreference(targetPos);
 
                         if (!openSet.Contains(neighbour))
                             openSet.Add(neighbour);
+                        else
+                            openSet.UpdateItem(neighbour);
                     }
                 }
             }
@@ -74,43 +91,31 @@ public class PathFinding : MonoBehaviour
         yield return null;
         if (pathSuccess)
         {
-            waypoints = RetracePath(startANode, targetANode);
+            waypoints = RetracePath(startNode, targetNode);
         }
         requestManager.FinishedProcessingPath(waypoints, pathSuccess);
 
     }
 
-    Vector3[] RetracePath(ANode startANode, ANode endANode)
+    Vector3[] RetracePath(ANode startNode, ANode endNode)
     {
         List<ANode> path = new List<ANode>();
-        ANode currentANode = endANode;
+        ANode currentNode = endNode;
 
-        while (currentANode != startANode)
+        while (currentNode != startNode)
         {
-            path.Add(currentANode);
-            currentANode = currentANode.parent;
+            path.Add(currentNode);
+            currentNode = currentNode.parent;
         }
-        Vector3[] waypoints = SimplifyPath(path);
-        Array.Reverse(waypoints);
+        path.Add(startNode);
+        path.Reverse();
+        
+        Vector3[] waypoints = new Vector3[path.Count];
+        for (int i = 0; i < path.Count; i++)
+        {
+            waypoints[i] = path[i].worldPosition;
+        }
         return waypoints;
-
-    }
-
-    Vector3[] SimplifyPath(List<ANode> path)
-    {
-        List<Vector3> waypoints = new List<Vector3>();
-        Vector2 directionOld = Vector2.zero;
-
-        for (int i = 1; i < path.Count; i++)
-        {
-            Vector2 directionNew = new Vector2(path[i - 1].gridX - path[i].gridX, path[i - 1].gridY - path[i].gridY);
-            if (directionNew != directionOld)
-            {
-                waypoints.Add(path[i].worldPosition);
-            }
-            directionOld = directionNew;
-        }
-        return waypoints.ToArray();
     }
 
     int GetDistance(ANode ANodeA, ANode ANodeB)

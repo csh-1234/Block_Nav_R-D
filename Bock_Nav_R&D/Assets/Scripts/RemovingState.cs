@@ -12,14 +12,16 @@ public class RemovingState : IBuildingState
     GridData BlockData;
     GridData TowerData;
     ObjectPlacer objectPlacer;
+    AGrid aGrid;
 
-    public RemovingState(Grid grid, PreviewSystem previewSystem, GridData blockData, GridData towerData, ObjectPlacer objectPlacer)
+    public RemovingState(Grid grid, PreviewSystem previewSystem, GridData blockData, GridData towerData, ObjectPlacer objectPlacer, AGrid aGrid)
     {
         this.grid = grid;
         this.previewSystem = previewSystem;
         this.BlockData = blockData;
         this.TowerData = towerData;
         this.objectPlacer = objectPlacer;
+        this.aGrid = aGrid;
         previewSystem.StartShowingRemovePreview();
     }
 
@@ -31,30 +33,35 @@ public class RemovingState : IBuildingState
     public void OnAction(Vector3Int gridPosition)
     {
         GridData selectedData = null;
-        if (TowerData.GetRepresentationIndex(gridPosition) != -1)
-        {
-            selectedData = TowerData;
-        }
-        else if (BlockData.GetRepresentationIndex(gridPosition) != -1)
+        if (BlockData.GetRepresentationIndex(gridPosition) != -1)
         {
             selectedData = BlockData;
         }
-
-        if (selectedData == null)
+        else if (TowerData.GetRepresentationIndex(gridPosition) != -1)
         {
-            //sound
-        }
-        else
-        {
-            gameObjectIndex = selectedData.GetRepresentationIndex(gridPosition);
-            if (gameObjectIndex == -1)
-                return;
-            selectedData.RemoveObjectAt(gridPosition);
-            objectPlacer.RemoveObjectAt(gameObjectIndex);
+            selectedData = TowerData;
         }
 
-        Vector3 cellPosition = grid.CellToWorld(gridPosition);
-        previewSystem.UpdatePosition(cellPosition, CheckIfSelectionIsValid(gridPosition));
+        if (selectedData != null)
+        {
+            PlacementData placementData = selectedData.GetPlacementData(gridPosition);
+            if (placementData != null)
+            {
+                objectPlacer.RemoveObjectAt(placementData.PlacedObjectIndex);
+                
+                foreach (var pos in placementData.occupiedPositions)
+                {
+                    aGrid.UpdateNode(pos, false);
+                }
+                
+                selectedData.RemoveObjectAt(gridPosition);
+                
+                if (PathManager.Instance != null)
+                {
+                    PathManager.Instance.UpdatePath();
+                }
+            }
+        }
     }
 
     private bool CheckIfSelectionIsValid(Vector3Int gridPosition)
